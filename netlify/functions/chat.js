@@ -27,7 +27,8 @@ exports.handler = async function(event, context) {
         model: 'google/gemini-2.0-flash-exp:free',
         messages: messages,
         temperature: 0.7,
-        max_tokens: 2000
+        max_tokens: 2000,
+        stream: false
       })
     });
 
@@ -36,6 +37,7 @@ exports.handler = async function(event, context) {
     if (!response.ok) {
       return {
         statusCode: response.status,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ error: data.error?.message || 'OpenRouter error' })
       };
     }
@@ -51,6 +53,7 @@ exports.handler = async function(event, context) {
   } catch (err) {
     return {
       statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: err.message })
     };
   }
