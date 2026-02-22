@@ -24,7 +24,7 @@ exports.handler = async function(event, context) {
         'X-Title': 'Prompt Upgrade Coach'
       },
       body: JSON.stringify({
-        model: 'openrouter/free',
+        model: 'google/gemini-2.0-flash-exp:free',
         messages: messages,
         temperature: 0.7,
         max_tokens: 2000
