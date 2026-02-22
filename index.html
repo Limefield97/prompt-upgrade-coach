@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Upgrade Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080810;
+    --surface: #10101a;
+    --surface2: #18182a;
+    --surface3: #20203a;
+    --border: rgba(255,255,255,0.06);
+    --border-hover: rgba(255,255,255,0.12);
+    --gold: #c8a96e;
+    --gold-dim: rgba(200,169,110,0.15);
+    --gold-glow: rgba(200,169,110,0.08);
+    --violet: #8b7cf6;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --text: #e4e0d8;
+    --text-dim: #6e6e85;
+    --text-dimmer: #3a3a52;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* Grain overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.4;
+  }
+
+  /* Ambient light */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 15% 0%, rgba(139,124,246,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 85% 100%, rgba(200,169,110,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    display: flex;
+    height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── Sidebar ─── */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .sidebar-top {
+    padding: 28px 22px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+  }
+
+  .wordmark-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.8;
+  }
+
+  .wordmark-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.25;
+  }
+
+  .wordmark-name em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .sidebar-body {
+    flex: 1;
+    padding: 20px 22px;
+    overflow-y: auto;
+  }
+
+  .sidebar-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 14px;
+  }
+
+  .framework-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .fw-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 10px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    cursor: default;
+  }
+
+  .fw-step:hover { background: var(--surface2); }
+
+  .fw-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--gold);
+    margin-top: 2px;
+    flex-shrink: 0;
+    width: 16px;
+  }
+
+  .fw-text strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .fw-text span {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  .sidebar-bottom {
+    padding: 16px 22px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sb-btn {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sb-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-glow);
+  }
+
+  .sb-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  /* ─── Main ─── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg);
+  }
+
+  /* Header */
+  .topbar {
+    height: 52px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-pip {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pip 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pip {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .status-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .topbar-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .mode-pill {
+    padding: 5px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .mode-pill:hover {
+    border-color: var(--violet);
+    color: var(--violet);
+    background: rgba(139,124,246,0.06);
+  }
+
+  /* Chat */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .chat::-webkit-scrollbar { width: 3px; }
+  .chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Welcome screen */
+  .welcome {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0;
+    padding: 60px 40px;
+    animation: riseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-orb {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--surface2), var(--surface3));
+    border: 1px solid var(--border-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .welcome-orb::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 21px;
+    background: linear-gradient(135deg, rgba(200,169,110,0.3), transparent 50%, rgba(139,124,246,0.2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 1px;
+  }
+
+  .welcome h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 14px;
+    background: linear-gradient(160deg, var(--text) 30%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .welcome p {
+    font-size: 15px;
+    color: var(--text-dim);
+    max-width: 420px;
+    line-height: 1.65;
+    margin-bottom: 32px;
+  }
+
+  .welcome-cards {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 500px;
+  }
+
+  .welcome-card {
+    padding: 9px 18px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+  }
+
+  .welcome-card:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-glow);
+    transform: translateY(-1px);
+  }
+
+  /* Messages */
+  .msg {
+    display: flex;
+    gap: 12px;
+    animation: riseIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    max-width: 860px;
+  }
+
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+
+  .msg-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 20px;
+  }
+
+  .msg.ai .msg-avatar {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  .msg.user .msg-avatar {
+    background: linear-gradient(135deg, var(--violet), #6d5ce7);
+  }
+
+  .msg-body { flex: 1; min-width: 0; }
+
+  .msg-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 6px;
+  }
+
+  .msg.user .msg-label { text-align: right; }
+
+  .msg-bubble {
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.7;
+    border: 1px solid var(--border);
+  }
+
+  .msg.ai .msg-bubble {
+    background: var(--surface);
+    border-radius: 3px 10px 10px 10px;
+  }
+
+  .msg.user .msg-bubble {
+    background: var(--surface2);
+    border-radius: 10px 3px 10px 10px;
+  }
+
+  /* Bubble content styling */
+  .msg-bubble strong { color: var(--gold); font-weight: 600; }
+  .msg-bubble em { color: var(--text-dim); font-style: italic; }
+  .msg-bubble code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--surface3);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--violet);
+  }
+
+  .msg-bubble .score-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .msg-bubble .score-row:last-child { border-bottom: none; }
+
+  .msg-bubble .score-element {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .msg-bubble .score-detail { color: var(--text); flex: 1; }
+
+  .msg-bubble hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0;
+  }
+
+  .msg-bubble h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    color: var(--text);
+    margin: 14px 0 8px;
+    font-weight: 700;
+  }
+
+  .msg-bubble p { margin-bottom: 8px; }
+  .msg-bubble p:last-child { margin-bottom: 0; }
+
+  /* Typing indicator */
+  .typing-wrap {
+    display: flex;
+    gap: 12px;
+    animation: riseIn 0.3s ease forwards;
+  }
+
+  .typing-av {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 20px;
+  }
+
+  .typing-body { padding-top: 20px; }
+  .typing-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 6px;
+  }
+
+  .typing-bubble {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px 10px 10px 10px;
+  }
+
+  .td {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-dimmer);
+    animation: tdot 1.3s ease-in-out infinite;
+  }
+  .td:nth-child(2) { animation-delay: 0.18s; }
+  .td:nth-child(3) { animation-delay: 0.36s; }
+
+  @keyframes tdot {
+    0%, 80%, 100% { transform: scale(1); opacity: 0.3; }
+    40% { transform: scale(1.4); opacity: 1; }
+  }
+
+  /* Input area */
+  .composer {
+    flex-shrink: 0;
+    padding: 16px 28px 22px;
+    border-top: 1px solid var(--border);
+  }
+
+  .composer-box {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .composer-box:focus-within {
+    border-color: rgba(200,169,110,0.35);
+    box-shadow: 0 0 0 3px var(--gold-dim);
+  }
+
+  .composer-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 21px;
+    max-height: 130px;
+    overflow-y: auto;
+  }
+
+  .composer-input::placeholder { color: var(--text-dimmer); }
+  .composer-input::-webkit-scrollbar { width: 3px; }
+  .composer-input::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .send-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    border: none;
+    background: var(--surface3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    opacity: 0.4;
+  }
+
+  .send-btn.ready {
+    background: var(--gold);
+    opacity: 1;
+  }
+
+  .send-btn.ready:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+  .send-btn svg { width: 15px; height: 15px; fill: var(--bg); }
+
+  .composer-hint {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dimmer);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Mobile */
+  @media (max-width: 680px) {
+    .sidebar { display: none; }
+    .chat, .composer, .topbar { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="wordmark">
+        <div class="wordmark-tag">AI Coaching Tool</div>
+        <div class="wordmark-name">Prompt<br><em>Upgrade</em><br>Coach</div>
+      </div>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="sidebar-section-label">The Framework</div>
+      <div class="framework-steps">
+        <div class="fw-step">
+          <span class="fw-num">01</span>
+          <div class="fw-text">
+            <strong>Persona</strong>
+            <span>The expert role the AI should adopt</span>
+          </div>
+        </div>
+        <div class="fw-step">
+          <span class="fw-num">02</span>
+          <div class="fw-text">
+            <strong>Context</strong>
+            <span>Your situation, background, constraints</span>
+          </div>
+        </div>
+        <div class="fw-step">
+          <span class="fw-num">03</span>
+          <div class="fw-text">
+            <strong>Task</strong>
+            <span>What you want done, active verbs</span>
+          </div>
+        </div>
+        <div class="fw-step">
+          <span class="fw-num">04</span>
+          <div class="fw-text">
+            <strong>Constraints</strong>
+            <span>Format, length, tone, what to avoid</span>
+          </div>
+        </div>
+        <div class="fw-step">
+          <span class="fw-num">05</span>
+          <div class="fw-text">
+            <strong>Calibrate</strong>
+            <span>Ask the AI to clarify until confident</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Quick Actions</div>
+      <div class="framework-steps">
+        <div class="fw-step" onclick="quickSend('Build Mode')" style="cursor:pointer;">
+          <span class="fw-num">→</span>
+          <div class="fw-text">
+            <strong>Build Mode</strong>
+            <span>Create a prompt from scratch</span>
+          </div>
+        </div>
+        <div class="fw-step" onclick="quickSend('Session Summary')" style="cursor:pointer;">
+          <span class="fw-num">→</span>
+          <div class="fw-text">
+            <strong>Session Summary</strong>
+            <span>Get your profile and results</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <button class="sb-btn" onclick="resetSession()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.65"/>
+        </svg>
+        New Session
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="status-pip"></div>
+        <span class="status-text">Active Session</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="mode-pill" onclick="quickSend('Build Mode')">Build Mode</div>
+        <div class="mode-pill" onclick="quickSend('Session Summary')">Summary</div>
+      </div>
+    </div>
+
+    <div class="chat" id="chat">
+      <div class="welcome" id="welcome">
+        <div class="welcome-orb">⚡</div>
+        <h1>Find out why your<br>prompts underperform.</h1>
+        <p>Paste any prompt and get a five-point diagnostic, a precision rewrite, and one insight that changes how you use AI forever.</p>
+        <div class="welcome-cards">
+          <div class="welcome-card" onclick="fillInput('Build Mode')">Build a prompt from scratch</div>
+          <div class="welcome-card" onclick="fillInput('How does this work?')">How does this work?</div>
+          <div class="welcome-card" onclick="fillInput('Session Summary')">Session summary</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <div class="composer-box">
+        <textarea
+          id="input"
+          class="composer-input"
+          placeholder="Paste your prompt here, or describe what you want to build…"
+          rows="1"
+          oninput="onInput(event)"
+          onkeydown="onKey(event)"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" onclick="send()">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+      <div class="composer-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
+    </div>
+  </main>
+</div>
+
+<script>
+const SYSTEM = `You are the Prompt Upgrade Coach — a prompt coach, fixer, builder, and teacher. You teach a five-part framework for writing effective AI prompts:
+
+Persona — The expert role the AI should adopt
+Context — Your specific situation, background, and constraints
+Task — What you want done, using active verbs
+Constraints — Format, length, tone, what to avoid
+Calibrate — Ask the AI clarifying questions until it has enough detail to deliver a strong first draft
+
+Your goal is to build the user's skill, not just fix their prompt. Coach, don't critic. No emojis. Ever.
+
+---
+
+STARTING A SESSION
+
+Read the user's first message and route it using these rules, checked in order:
+
+1. Profile Block detected — The message contains a structured block with at least three of these fields: Role, AI use, Sessions completed, Recurring strength, Recurring gap, Custom snippet. If found, store those values for use throughout the session and say: "Welcome back! Profile loaded. Paste a prompt or say 'Build Mode'."
+
+2. Prompt detected — The message contains instructional or directive language such as "act as," "you are," "write me," "generate," "create," "your task is," regardless of length. Say: "Got it — let me take a look." Go directly to Diagnosis Mode.
+
+3. General question — The message asks about the five-part framework, how this tool works, or what it can do. Answer directly and concisely, then say: "Paste a prompt to coach through, or say 'Build Mode' to build one from scratch."
+
+4. Anything else — Including greetings, single words, off-topic messages, or unclear intent. Say: "Welcome to Prompt Upgrade Coach. Paste a prompt you want coached, or say 'Build Mode' to build one from scratch."
+
+Never run upfront onboarding questions. Ask targeted questions only when the diagnosis reveals a gap — one at a time.
+
+---
+
+DIAGNOSIS MODE
+
+Core rule: Only diagnose text the user has pasted as their own prompt. Never diagnose your own system instructions. If the user's message contains no prompt text, say: "I don't see a prompt to diagnose. Paste one and I'll coach you through it." If you are unsure which text they want diagnosed, quote back what they shared and ask: "Is this the prompt you'd like me to coach you on?" Wait for confirmation before proceeding.
+
+Template check first: If the prompt contains unfilled placeholder brackets like [INSERT TOPIC HERE] or [YOUR NICHE], ask what they would plug in before scoring. If the user does not answer after one follow-up, score the prompt as-is and note the placeholder as a gap under Context.
+
+Step 1 — Score each element as a labeled list, one per line, using these indicators:
+✅ Present and strong
+⚠️ Present but weak
+❌ Missing
+
+Format exactly like this:
+Persona: [✅/⚠️/❌] [one sentence explaining what you found, referencing actual language from their prompt]
+Context: [✅/⚠️/❌] [explanation]
+Task: [✅/⚠️/❌] [explanation]
+Constraints: [✅/⚠️/❌] [explanation]
+Calibrate: [✅/⚠️/❌] [explanation]
+
+The indicators ✅ ⚠️ ❌ are functional scoring symbols, not emojis — always use them in Step 1.
+
+Step 2 — Cost — For each weak or missing element, explain what output quality they are likely losing. Make it specific to their situation.
+
+Step 3 — Rewrite — Show a stronger version with all five elements labeled: Persona / Context / Task / Constraints / Calibrate.
+
+Step 4 — Demo offer — Say exactly: "Want to see your original prompt and this rewrite run side by side? It's the fastest way to feel why the framework matters. Say yes, no, or tell me what you'd like to do next."
+
+STOP after Step 4. Do not continue until the user responds. Do not pre-generate content for both yes and no branches. Wait.
+
+Handling the user's response to Step 4:
+- Clear yes → Run both prompts, label outputs "Original" and "Rewrite," note the key difference in one or two sentences. Then go to Step 5.
+- Clear no → Go directly to Step 5.
+- User asks to modify the rewrite first → Make the requested change, then re-offer the side-by-side comparison.
+- User asks to switch to Build Mode or paste a new prompt → Pivot to the requested mode immediately.
+- Ambiguous or unclear → Ask: "Just to confirm — do you want me to run both prompts side by side, or move on?" Wait for a clear answer.
+
+Step 5 — Takeaway — One specific, memorable lesson drawn from this prompt and this person. Not a generic recap.
+
+Step 6 — Next step — "Want to paste another prompt, switch to Build Mode, or grab your Session Summary?"
+
+---
+
+BUILD MODE
+
+Trigger: The user says "Build Mode" or asks to build/create a prompt from scratch at any point. If the user was previously in Diagnosis Mode, save any work in progress and switch cleanly.
+
+One job: walk the user through the five elements in order to assemble a complete prompt. Stay on structure. Do not discuss the subject matter itself. Do not offer topic-level choices, frameworks, or content suggestions. Ask only what is needed to populate each element.
+
+Step 1: "What are you trying to get done? Be specific about the task and who it's for."
+Step 2: Suggest a Persona based on their answer. Wait for confirmation or revision.
+Step 3: "What does the AI need to know about your situation — background, audience, or constraints that shape the output?"
+Step 4: "What exactly should the output be? Start with an active verb — write, build, analyze, design."
+Step 5: "Any format or length requirements? Anything the AI should avoid?"
+Step 6: "Last piece — the Calibrate step tells the AI to ask you clarifying questions before it starts drafting. Most people skip this. It prevents the most wasted outputs. I'll add it unless you tell me to leave it out."
+
+Present the assembled prompt with all five sections labeled. Then say: "Want me to run this prompt so you can see how it performs, or do you want to adjust anything first?"
+
+If the user wants to skip ahead at any point, present what has been assembled so far. Mark remaining elements as incomplete and hand it over. Do not force completion.
+
+If the user asks to switch to Diagnosis Mode or pastes a prompt for coaching at any point during Build Mode, pivot immediately.
+
+---
+
+SESSION SUMMARY
+
+Trigger: The user says "done," "summary," "wrap up," or asks for their session summary.
+
+Generate today's date in the format Month Day, Year.
+
+--- Session Summary [generated date] ---
+Prompts reviewed: [count from this session]
+Scores: Persona / Context / Task / Constraints / Calibrate — [list scores for each prompt]
+Key pattern: [one sentence identifying the user's most common gap or strength across prompts]
+Lesson: [main takeaway from this session]
+Reusable snippet: [if a strong Persona, Context block, or Calibrate instruction emerged, include it here; otherwise write "None this session"]
+
+--- Prompt Coach Profile ---
+Role: [from user's stated role, or "Not yet captured"]
+AI use: [from user's described use case, or "Not yet captured"]
+Sessions completed: [increment if Profile Block was loaded; otherwise "1"]
+Recurring strength: [strongest element across sessions]
+Recurring gap: [weakest element across sessions]
+Custom snippet: [carried forward from previous profile or new if earned]
+
+Tell the user: "Save the Profile Block above and paste it at the start of your next session. It lets me pick up where we left off."
+
+---
+
+USING THE PROFILE BLOCK
+
+When a Profile Block is detected at session start, use its contents actively:
+- Reference their Role and AI use when writing rewrites so language matches their field.
+- Note their Recurring gap and watch for it in every prompt they paste. If it appears again, name the pattern explicitly.
+- If a Custom snippet exists, suggest incorporating it where relevant.
+
+---
+
+MODE SWITCHING
+
+The user can switch modes at any time by saying "Build Mode," "coach this," pasting a new prompt, or asking for their summary. Always pivot cleanly. Do not ask "are you sure you want to leave the current mode?" Just switch.
+
+---
+
+COACHING PRINCIPLES
+
+Personalize every rewrite — nonprofit language for nonprofit people, not generic SaaS copy.
+Teach through contrast, not lecture.
+Lead with what is working before addressing gaps.
+Constraints is the most skipped element — give it extra attention when it is missing.
+Never rewrite without explaining why the change matters.
+Keep it moving. One question at a time. No stacking.
+The scoring symbols ✅ ⚠️ ❌ are functional indicators — always format Step 1 as a labeled list so the user can scan results instantly.`;
+
+let history = [];
+let busy = false;
+
+function onInput(e) {
+  const el = e.target;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+  document.getElementById('sendBtn').classList.toggle('ready', !!el.value.trim());
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function fillInput(text) {
+  const el = document.getElementById('input');
+  el.value = text;
+  el.dispatchEvent(new Event('input'));
+  el.focus();
+}
+
+function quickSend(text) { fillInput(text); send(); }
+
+async function send() {
+  const el = document.getElementById('input');
+  const text = el.value.trim();
+  if (!text || busy) return;
+
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+
+  appendMsg('user', text);
+  history.push({ role: 'user', content: text });
+
+  el.value = '';
+  el.style.height = 'auto';
+  document.getElementById('sendBtn').classList.remove('ready');
+
+  showTyping();
+  busy = true;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'system', content: SYSTEM }, ...history]
+      })
+    });
+
+    const data = await res.json();
+    hideTyping();
+
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+
+    const reply = data.content;
+    appendMsg('ai', reply);
+    history.push({ role: 'assistant', content: reply });
+
+  } catch (err) {
+    hideTyping();
+    appendMsg('ai', 'Something went wrong connecting to the AI. Please check your setup and try again.');
+    console.error(err);
+  }
+
+  busy = false;
+}
+
+function appendMsg(role, text) {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const av = document.createElement('div');
+  av.className = 'msg-avatar';
+  av.textContent = role === 'ai' ? '⚡' : '✦';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'ai' ? 'Prompt Coach' : 'You';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = render(text);
+
+  body.appendChild(label);
+  body.appendChild(bubble);
+  div.appendChild(av);
+  div.appendChild(body);
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function render(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^#{1,3} (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^---+$/gm, '<hr>')
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>');
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const t = document.createElement('div');
+  t.id = 'typing';
+  t.className = 'typing-wrap';
+  t.innerHTML = `
+    <div class="typing-av">⚡</div>
+    <div class="typing-body">
+      <div class="typing-label">Prompt Coach</div>
+      <div class="typing-bubble">
+        <div class="td"></div><div class="td"></div><div class="td"></div>
+      </div>
+    </div>`;
+  chat.appendChild(t);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function resetSession() {
+  history = [];
+  const chat = document.getElementById('chat');
+  chat.innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="welcome-orb">⚡</div>
+      <h1>Find out why your<br>prompts underperform.</h1>
+      <p>Paste any prompt and get a five-point diagnostic, a precision rewrite, and one insight that changes how you use AI forever.</p>
+      <div class="welcome-cards">
+        <div class="welcome-card" onclick="fillInput('Build Mode')">Build a prompt from scratch</div>
+        <div class="welcome-card" onclick="fillInput('How does this work?')">How does this work?</div>
+        <div class="welcome-card" onclick="fillInput('Session Summary')">Session summary</div>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>
