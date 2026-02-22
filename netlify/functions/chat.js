@@ -24,7 +24,7 @@ exports.handler = async function(event, context) {
         'X-Title': 'Prompt Upgrade Coach'
       },
       body: JSON.stringify({
-        model: 'openrouter/auto',
+        model: 'meta-llama/llama-4-maverick:free',
         messages: messages,
         temperature: 0.7,
         max_tokens: 2000
